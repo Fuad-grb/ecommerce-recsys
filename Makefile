@@ -1,6 +1,3 @@
-PYTHON = python3
-DOCKER_COMPOSE = docker-compose
-
 .PHONY: help lint format test up down
 
 help:
@@ -26,10 +23,10 @@ test:
 # --- Infrastructure ---
 
 up:
-	$(DOCKER_COMPOSE) up -d
+	docker-compose up -d --build
 
 down:
-	$(DOCKER_COMPOSE) down
+	docker-compose down
 
 # --- Cleanup ---
 clean:
