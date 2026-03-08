@@ -9,8 +9,9 @@ description = "E-commerce recommendation system"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    {name = "Fuad Gurbanov", email = "fuad.gurbanove@egmail.com"},
+    {name = "Fuad Gurbanov", email = "fuad.gurbanove@gmail.com"},
 ]
+
 
 [project.optional-dependencies]
 
