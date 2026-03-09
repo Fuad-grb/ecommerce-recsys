@@ -25,3 +25,4 @@ temp/
 .env
 .env.*
 secrets.yaml
+data/
