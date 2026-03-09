@@ -60,7 +60,9 @@ services:
           condition: service_healthy
 
   kafka_producer:
-    build: ./kafka_producer
+    build:
+      context: .
+      dockerfile: ./kafka_producer/Dockerfile
     env_file: .env
     depends_on:
         kafka:
