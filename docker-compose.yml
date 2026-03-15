@@ -95,18 +95,22 @@ services:
           condition: service_healthy
 
   ml_pipeline:
-    build: ./ml_pipeline
+    build:
+      context: .
+      dockerfile: ./ml_pipeline/Dockerfile
     env_file: .env
     depends_on:
-        postgres:
-          condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   mlflow:
-  image: ghcr.io/mlflow/mlflow:v2.12.2
-  ports:
-    - "5001:5000"
-  command: mlflow server --host 0.0.0.0 --backend-store-uri sqlite:///mlflow.db
-    - mlflow_data:/mlflow
+    image: ghcr.io/mlflow/mlflow:v2.12.2
+    ports:
+      - "5001:5000"
+    command: mlflow server --host 0.0.0.0 --backend-store-uri sqlite:///mlflow.db
+    volumes:
+      - mlflow_data:/mlflow
 
 volumes:
   postgres_data:
+  mlflow_data:

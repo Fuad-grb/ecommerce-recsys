@@ -3,8 +3,11 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F  # noqa: N812
 
-spark = SparkSession.builder.appName("Data Preparation").getOrCreate()
-
+spark = (
+    SparkSession.builder.appName("Data Preparation")
+    .config("spark.jars", "/app/jars/postgresql-42.7.3.jar")
+    .getOrCreate()
+)
 url = "jdbc:postgresql://postgres:5432/ecommerce"
 
 properties = {
@@ -32,14 +35,25 @@ user_item_matrix = weighted_df.groupBy("visitor_id", "item_id").agg(
 
 user_item_matrix.show(10)
 
-cutoff = weighted_df.approxQuantile("timestamp", [0.8], 0.01)[0]
+weighted_df_with_double = weighted_df.withColumn(
+    "ts_double", F.col("timestamp").cast("double")
+)
 
-train_events = weighted_df.filter(F.col("timestamp") <= cutoff)
-test_events = weighted_df.filter(F.col("timestamp") > cutoff)
+cutoff = weighted_df_with_double.approxQuantile("ts_double", [0.8], 0.01)[0]
+
+train_events = weighted_df_with_double.filter(F.col("ts_double") <= cutoff)
+test_events = weighted_df_with_double.filter(F.col("ts_double") > cutoff)
 
 train_data = train_events.groupBy("visitor_id", "item_id").agg(
     F.sum("event_weight").alias("score")
 )
 test_data = test_events.groupBy("visitor_id", "item_id").agg(
     F.sum("event_weight").alias("score")
+)
+
+train_data.write.jdbc(
+    url=url, table="train_data", mode="overwrite", properties=properties
+)
+test_data.write.jdbc(
+    url=url, table="test_data", mode="overwrite", properties=properties
 )
