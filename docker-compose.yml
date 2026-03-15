@@ -101,5 +101,12 @@ services:
         postgres:
           condition: service_healthy
 
+  mlflow:
+  image: ghcr.io/mlflow/mlflow:v2.12.2
+  ports:
+    - "5001:5000"
+  command: mlflow server --host 0.0.0.0 --backend-store-uri sqlite:///mlflow.db
+    - mlflow_data:/mlflow
+
 volumes:
   postgres_data:
