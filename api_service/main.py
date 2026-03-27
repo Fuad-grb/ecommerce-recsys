@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Any, List
 
 import uvicorn
+from cache import get_cached, set_cached
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from scipy.sparse import csr_matrix
@@ -73,6 +74,11 @@ async def health() -> dict[str, Any]:
 
 @app.get("/recommendations/{visitor_id}", response_model=RecommendResponse)
 async def get_recommendations(visitor_id: int, n: int = 10) -> RecommendResponse:
+    key = f"recommendations:{visitor_id}:{n}"
+    cached_response = get_cached(key)
+    if cached_response:
+        return RecommendResponse.model_validate_json(cached_response)
+
     if "model" not in model_assets:
         raise HTTPException(status_code=503, detail="Model not loaded or unavailable")
 
@@ -96,11 +102,19 @@ async def get_recommendations(visitor_id: int, n: int = 10) -> RecommendResponse
         for i, j in zip(ids, scores)
     ]
 
-    return RecommendResponse(visitor_id=visitor_id, recommendations=recommendations)
+    response = RecommendResponse(visitor_id=visitor_id, recommendations=recommendations)
+    set_cached(key, response.model_dump_json())
+
+    return response
 
 
 @app.get("/item/{item_id}/similar", response_model=SimilarityResponse)
 async def get_item_recommendations(item_id: int, n: int = 10) -> SimilarityResponse:
+    key = f"similar:{item_id}:{n}"
+    cached_response = get_cached(key)
+    if cached_response:
+        return SimilarityResponse.model_validate_json(cached_response)
+
     if "model" not in model_assets:
         raise HTTPException(status_code=503, detail="Model not loaded or unavailable")
 
@@ -118,7 +132,10 @@ async def get_item_recommendations(item_id: int, n: int = 10) -> SimilarityRespo
         for i, j in zip(ids, scores)
     ]
 
-    return SimilarityResponse(item_id=item_id, similarities=similar)
+    response = SimilarityResponse(item_id=item_id, similarities=similar)
+    set_cached(key, response.model_dump_json())
+
+    return response
 
 
 if __name__ == "__main__":
