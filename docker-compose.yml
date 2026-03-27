@@ -51,13 +51,21 @@ services:
       - "6379:6379"
 
   api_service:
-    build: ./api_service
+    build:
+      context: .
+      dockerfile: ./api_service/Dockerfile
     env_file: .env
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/model/best_model.pkl
+    volumes:
+      - ./best_model.pkl:/app/model/best_model.pkl
     depends_on:
-        postgres:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   kafka_producer:
     build:

@@ -6,6 +6,7 @@ from typing import Any, List
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from scipy.sparse import csr_matrix
 
 # Global variable to store model and mappings in memory
 # to not load from disk each time
@@ -83,7 +84,10 @@ async def get_recommendations(visitor_id: int, n: int = 10) -> RecommendResponse
         return RecommendResponse(visitor_id=visitor_id, recommendations=[])
 
     # Generate recomendations with the latent factors
-    ids, scores = model_assets["model"].recommend(user_id, user_items=None, N=n)
+    empty_user_items = csr_matrix((1, len(model_assets["item_id_mapping"])))
+    ids, scores = model_assets["model"].recommend(
+        user_id, user_items=empty_user_items, N=n
+    )
     # user_items = None to not filter already viewed items
 
     # Map internal ALS indices back to original product item_ids
@@ -100,8 +104,13 @@ async def get_item_recommendations(item_id: int, n: int = 10) -> SimilarityRespo
     if "model" not in model_assets:
         raise HTTPException(status_code=503, detail="Model not loaded or unavailable")
 
+    item_to_id = {int(v): k for k, v in enumerate(model_assets["item_id_mapping"])}
+    item_idx = item_to_id.get(item_id)
+
+    if item_idx is None:
+        raise HTTPException(status_code=404, detail="Item not found")
     # Generate recomendations with the latent factors
-    ids, scores = model_assets["model"].similar_items(item_id, N=n)
+    ids, scores = model_assets["model"].similar_items(item_idx, N=n)
 
     # Map internal ALS indices back to original product item_ids
     similar = [
